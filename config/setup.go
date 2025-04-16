@@ -5,10 +5,14 @@ import (
 	"fmt"
 	t "microblogging/model"
 	d "microblogging/repository"
+	srv "microblogging/server"
+	"microblogging/service"
+	"net/http"
 	"os"
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
@@ -106,4 +110,18 @@ func SetupRepository(db *sqlx.DB, logger *zap.Logger) d.PostRepository {
 		DB:     db,
 		Logger: logger,
 	}
+}
+
+func ServerSetup(svc service.BlogService) {
+	s := srv.NewServer(context.Background(), svc)
+
+	router := mux.NewRouter()
+	api := router.PathPrefix("/V1").Subrouter()
+	api.HandleFunc("/post", s.CreatePostHandler).Methods("POST")
+	api.HandleFunc("/timeline", s.GetTimelineHandler).Methods("GET")
+	api.HandleFunc("/follow", s.FollowUserHandler).Methods("POST")
+	api.HandleFunc("/followees/{id}", s.GetFolloweesHandler).Methods("GET")
+
+	port := ":8080"
+	http.ListenAndServe(port, router)
 }

@@ -1,93 +1,34 @@
 package server
 
 import (
-	"microblogging/service"
+	"encoding/json"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
-type BlogHandler struct {
-	service service.BlogService
+type CreatePostRequest struct {
+	UserID  string `json:"user_id"`
+	Content string `json:"content"`
 }
 
-func NewBlogHandler(s service.BlogService) *BlogHandler {
-	return &BlogHandler{service: s}
-}
-
-func (h *BlogHandler) CreatePost(c *gin.Context) {
-	var req struct {
-		UserID  string `json:"user_id"`
-		Content string `json:"content"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid input"})
+func (s *server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		RespondWithError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
-	if len(req.Content) > 280 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "content too long"})
-		return
-	}
-
-	if err := h.service.CreatePost(req.UserID, req.Content); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create post"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{"message": "post created"})
-}
-
-func (h *BlogHandler) GetTimeline(c *gin.Context) {
-	userID := c.Query("user_id")
-	if userID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
-		return
-	}
-
-	posts, err := h.service.GetTimeline(userID)
+	req, err := ValidateCreatePostInput(r.Body)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not get timeline"})
+		RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, posts)
-}
-
-type FollowRequest struct {
-	FollowerID string `json:"follower_id" binding:"required"`
-	FolloweeID string `json:"followee_id" binding:"required"`
-}
-
-// FollowUser handles the HTTP POST request to follow a user.
-// It expects the user to be logged in and the request body to contain the IDs of the follower and followee.
-// The request is expected to be in JSON format.
-func (h *BlogHandler) FollowUser(c *gin.Context) {
-	var req FollowRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
-		return
-	}
-
-	if err := h.service.FollowUser(req.FollowerID, req.FolloweeID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to follow user"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Followed successfully"})
-}
-
-// GetFollowees handles the HTTP GET request to retrieve the list of followees
-// for a specified user. It expects the user ID to be provided as a URL parameter.
-func (h *BlogHandler) GetFollowees(c *gin.Context) {
-	userID := c.Param("id")
-
-	followees, err := h.service.GetFollowees(userID)
+	err = s.Svc.CreatePost(req.UserID, req.Content)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch followees"})
+		RespondWithError(w, http.StatusInternalServerError, "could not create post")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"followees": followees})
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "post created"})
 }
