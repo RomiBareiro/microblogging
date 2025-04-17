@@ -7,11 +7,11 @@ import (
 
 type Post struct {
 	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
-	Content   string    `json:"content"`
+	UserID    string    `json:"user_id" validate:"required,uuid"`
+	Content   string    `json:"content" validate:"required,max=280"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
-
 type Follow struct {
 	FollowerID string
 	FolloweeID string
@@ -32,7 +32,7 @@ type ErrorResponse struct {
 }
 
 type CreatePostRequest struct {
-	UserID  string `json:"user_id"`
+	UserID  string `json:"user_id" validate:"required"`
 	Content string `json:"content"`
 }
 
@@ -48,10 +48,24 @@ var (
 	ErrMethodNotAllowed    = errors.New("method not allowed")
 	ErrMissingFollowerID   = errors.New("follower_id is required")
 	ErrCouldNotGetTimeline = errors.New("could not get timeline")
+	ErrCouldNotCreateUser  = errors.New("could not create user")
 	ErrMissingFolloweeID   = errors.New("followee_id is required")
 )
 
 type FollowRequest struct {
-	FollowerID string `json:"follower_id"`
-	FolloweeID string `json:"followee_id"`
+	FollowerID string `json:"follower_id" validate:"required,uuid"`
+	FolloweeID string `json:"followee_id" validate:"required,uuid"`
+}
+
+type CreateUserRequest struct {
+	ID   string `json:"id" validate:"required,uuid"`
+	Name string `json:"name" validate:"required,min=3,max=50"`
+}
+
+type User struct {
+	ID         string    `json:"id"`
+	Name       string    `json:"name"`
+	LastPostID string    `json:"last_post_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }

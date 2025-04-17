@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func ValidateCreatePostInput(body io.Reader) (CreatePostRequest, error) {
-	var req CreatePostRequest
+func ValidateCreatePostInput(body io.Reader) (m.CreatePostRequest, error) {
+	var req m.CreatePostRequest
 	err := json.NewDecoder(body).Decode(&req)
 	if err != nil {
 		return req, errors.New("invalid input")
@@ -35,13 +35,4 @@ func ValidateUserID(userID string) (int, string) {
 		return http.StatusBadRequest, m.ErrInvalidUUID.Error()
 	}
 	return http.StatusOK, ""
-}
-
-func ValidateFollowInput(body io.Reader) (m.FollowRequest, error) {
-	var req m.FollowRequest
-	err := json.NewDecoder(body).Decode(&req)
-	if err != nil || req.FollowerID == "" || req.FolloweeID == "" {
-		return req, m.ErrInvalidRequest
-	}
-	return req, nil
 }

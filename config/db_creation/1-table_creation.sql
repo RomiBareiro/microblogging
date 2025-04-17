@@ -1,13 +1,19 @@
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE IF NOT EXISTS posts (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id TEXT NOT NULL,
     content TEXT NOT NULL CHECK (char_length(content) <= 280),
-    created_at TIMESTAMPTZ NOT NULL
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
 );
 
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY,
-    username TEXT NOT NULL UNIQUE CHECK (char_length(username) <= 20)
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username TEXT NOT NULL UNIQUE CHECK (char_length(username) <= 50),
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    last_post_id UUID
 );
 
 CREATE TABLE IF NOT EXISTS follows (

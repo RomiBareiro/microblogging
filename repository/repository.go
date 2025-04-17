@@ -3,15 +3,19 @@ package repository
 import (
 	"microblogging/model"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
 
 type PostRepository interface {
-	Save(post *model.Post) error
+	Save(post *model.Post) (uuid.UUID, error)
 	GetTimeline(userID string) ([]model.Post, error)
 	FollowUser(followerID, followeeID string) error
 	GetFollowees(userID string) ([]string, error)
+	CreateUser(userData model.CreateUserRequest) (uuid.UUID, error)
+	DeleteUser(userID string) error
+	GetUser(userID string) (model.User, error)
 }
 
 type postRepo struct {
@@ -35,7 +39,22 @@ func (p *postRepo) GetTimeline(userID string) ([]model.Post, error) {
 }
 
 // Save implements PostRepository.
-func (p *postRepo) Save(post *model.Post) error {
+func (p *postRepo) Save(post *model.Post) (uuid.UUID, error) {
+	panic("unimplemented")
+}
+
+// CreateUser implements PostRepository.
+func (p *postRepo) CreateUser(userData model.CreateUserRequest) (uuid.UUID, error) {
+	panic("unimplemented")
+}
+
+// DeleteUser implements PostRepository.
+func (p *postRepo) DeleteUser(userID string) error {
+	panic("unimplemented")
+}
+
+// GetUser implements PostRepository.
+func (p *postRepo) GetUser(userID string) (model.User, error) {
 	panic("unimplemented")
 }
 

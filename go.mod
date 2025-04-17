@@ -8,7 +8,10 @@ require (
 	github.com/lib/pq v1.10.9
 )
 
-require go.uber.org/multierr v1.10.0 // indirect
+require (
+	github.com/go-playground/validator v9.31.0+incompatible // indirect
+	go.uber.org/multierr v1.10.0 // indirect
+)
 
 require (
 	github.com/bytedance/sonic v1.11.6 // indirect
