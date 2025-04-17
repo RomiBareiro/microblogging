@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS posts (
     user_id TEXT NOT NULL,
     content TEXT NOT NULL CHECK (char_length(content) <= 280),
     created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS users (

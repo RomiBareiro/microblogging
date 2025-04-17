@@ -21,15 +21,16 @@ func (s *server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = s.Svc.CreatePost(req.UserID, req.Content)
+	id, err := s.Svc.CreatePost(req.UserID, req.Content)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("could not create post: %v", err))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"message": "post created"}) // devolver id del post
+	RespondWithSuccess(w, http.StatusCreated, "post created/updated", map[string]interface{}{
+		"user_id": req.UserID,
+		"post_id": id,
+	})
 }
 
 func (s *server) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -108,7 +109,7 @@ func (s *server) FollowUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RespondWithSuccess(w, http.StatusOK, "user followed", map[string]interface{}{
-		"followed": req.FollowerID,
+		"user_id":  req.FollowerID,
 		"followee": req.FolloweeID,
 	})
 }
@@ -133,9 +134,9 @@ func (s *server) GetFolloweesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	RespondWithSuccess(w, http.StatusOK, "user followed", map[string]interface{}{
-		"followees": followees,
+	RespondWithSuccess(w, http.StatusOK, "Got user followees", map[string]interface{}{
 		"user_id":   userID,
+		"followees": followees,
 	})
 }
 

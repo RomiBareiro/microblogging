@@ -1,9 +1,9 @@
-INSERT INTO users (id, username)
+INSERT INTO users (id, username, created_at, updated_at)
 VALUES
-  ('11111111-1111-1111-1111-111111111111'::UUID, 'alice'),
-  ('22222222-2222-2222-2222-222222222222'::UUID, 'bob'),
-  ('33333333-3333-3333-3333-333333333333'::UUID, 'carol'),
-  ('44444444-4444-4444-4444-444444444444'::UUID, 'dave');
+  ('11111111-1111-1111-1111-111111111111'::UUID, 'alice', now(), now()),
+  ('22222222-2222-2222-2222-222222222222'::UUID, 'bob', now(), now()),
+  ('33333333-3333-3333-3333-333333333333'::UUID, 'carol', now(), now()),
+  ('44444444-4444-4444-4444-444444444444'::UUID, 'dave', now(), now());
 
 INSERT INTO follows (follower_id, followee_id)
 VALUES
