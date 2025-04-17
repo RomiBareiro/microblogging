@@ -21,20 +21,38 @@ func (r *DBConnector) NewPostRepository() PostRepository {
 
 func (r *DBConnector) Save(post *model.Post) (uuid.UUID, error) {
 	var postID uuid.UUID
-	query := `INSERT INTO posts (user_id, content, created_at, updated_at)
-	VALUES ($1, $2, $3, $4)
-	ON CONFLICT (user_id, content) 
-	DO UPDATE SET content = EXCLUDED.content, updated_at = EXCLUDED.updated_at
-	RETURNING id`
 
-	_, err := r.DB.Exec(query,
-		post.UserID, post.Content, post.CreatedAt, post.UpdatedAt)
+	insertQuery := `
+		INSERT INTO posts (user_id, content, created_at, updated_at)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (user_id, content)
+		DO UPDATE SET 
+			content = EXCLUDED.content,
+			updated_at = EXCLUDED.updated_at
+		RETURNING id;
+	`
 
+	err := r.DB.QueryRow(insertQuery,
+		post.UserID, post.Content, post.CreatedAt, post.UpdatedAt,
+	).Scan(&postID)
 	if err != nil {
 		r.Logger.Error("Error saving/updating post", zap.Error(err))
 		return uuid.Nil, err
 	}
-	r.Logger.Sugar().Info("Post saved successfully", zap.String("post_id", postID.String()))
+
+	// Goroutine is not blocker if user update is failed
+	go func(postID uuid.UUID, userID string, updatedAt time.Time) {
+		updateUserQuery := `
+			UPDATE users
+			SET last_post_id = $1, updated_at = $2
+			WHERE id = $3;
+		`
+		if _, err := r.DB.Exec(updateUserQuery, postID, updatedAt, userID); err != nil {
+			r.Logger.Error("Error updating user's last_post_id", zap.Error(err))
+		}
+	}(postID, post.UserID, post.UpdatedAt)
+
+	r.Logger.Sugar().Infow("Post saved", "post_id", postID.String())
 	return postID, nil
 }
 
@@ -76,7 +94,7 @@ func (r *DBConnector) GetFollowees(userID string) ([]string, error) {
 		r.Logger.Error("Error getting followees", zap.Error(err))
 		return nil, err
 	}
-	r.Logger.Sugar().Info("Got followees info", zap.String("user_id", userID))
+	r.Logger.Sugar().Infow("Got followees info", "user_id", userID)
 	return followees, nil
 }
 
@@ -92,7 +110,7 @@ func (r *DBConnector) CreateUser(userData model.CreateUserRequest) (uuid.UUID, e
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to insert user: %w", err)
 	}
-	r.Logger.Sugar().Info("User created successfully", zap.String("user_id", userID.String()))
+	r.Logger.Sugar().Infow("User created successfully", "user_id", userID.String())
 	return userID, nil
 }
 
@@ -103,7 +121,7 @@ func (r *DBConnector) GetUser(userID string) (model.User, error) {
 		r.Logger.Error("Error getting user", zap.Error(err))
 		return model.User{}, err
 	}
-	r.Logger.Sugar().Info("Got user info", zap.String("user_id", userID))
+	r.Logger.Sugar().Infow("Got user info", "user_id", userID)
 	return user, nil
 }
 
@@ -113,6 +131,6 @@ func (r *DBConnector) DeleteUser(userID string) error {
 	if err != nil {
 		r.Logger.Error("Error deleting user", zap.Error(err))
 	}
-	r.Logger.Sugar().Info("User is deleted", zap.String("user_id", userID))
+	r.Logger.Sugar().Info("User is deleted", "user_id", userID)
 	return err
 }
