@@ -129,7 +129,7 @@ func (s *server) GetTimelineHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	RespondWithSuccess(w, http.StatusOK, "posts", map[string]interface{}{
+	RespondWithSuccess(w, http.StatusOK, "Timeline info", map[string]interface{}{
 		"user_id": req.UserID,
 		"posts":   posts,
 	})

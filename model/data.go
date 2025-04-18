@@ -43,7 +43,6 @@ var (
 	ErrInvalidUUID         = errors.New("invalid input syntax for type uuid")
 	ErrUserNotFound        = errors.New("user not found")
 	ErrFolloweeNotFound    = errors.New("followee not found")
-	ErrSelfFollow          = errors.New("cannot follow yourself")
 	ErrContentTooLong      = errors.New("post content exceeds character limit")
 	ErrMissingUserID       = errors.New("user_id is required")
 	ErrInvalidJSON         = errors.New("invalid JSON format")
