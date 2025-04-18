@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"microblogging/model"
 	s "microblogging/service"
 	"net/http"
 
@@ -26,7 +27,7 @@ func NewServer(ctx context.Context, svc s.BlogService) *server {
 func RespondWithError(w http.ResponseWriter, code int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(m.ErrorResponse{Code: code, Message: message})
+	json.NewEncoder(w).Encode(model.ErrorResponse{Code: code, Message: message})
 }
 
 func RespondWithSuccess(w http.ResponseWriter, code int, message string, data interface{}) {
