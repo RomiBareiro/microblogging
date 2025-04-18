@@ -62,7 +62,6 @@ type FollowRequest struct {
 }
 
 type CreateUserRequest struct {
-	ID   string `json:"id" validate:"required,uuid"`
 	Name string `json:"name" validate:"required,min=3,max=50"`
 }
 

@@ -49,7 +49,7 @@ func (r *DBConnector) UpdatePostPut(post model.CreatePostRequest) error {
 		return model.ErrInvalidUUID
 	}
 
-	if err := r.existPost(postUUID); err != nil {
+	if err := r.existPost(postUUID, post.UserID); err != nil {
 		return model.ErrPostNotFound
 	}
 
@@ -119,7 +119,7 @@ func (r *DBConnector) CreateUser(userData model.CreateUserRequest) (uuid.UUID, e
 	now := time.Now().UTC()
 	var userID uuid.UUID
 	query := `
-		INSERT INTO users (username, created_at, updated_at)
+		INSERT INTO users (user_name, created_at, updated_at)
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
@@ -167,20 +167,19 @@ func (r *DBConnector) updateUserLastPostAsync(postID uuid.UUID, userID string, u
 	}()
 }
 
-func (r *DBConnector) existPost(postID uuid.UUID) error {
+func (r *DBConnector) existPost(postID uuid.UUID, userID string) error {
 	var exists bool
-	checkPostQuery := `SELECT EXISTS(SELECT 1 FROM posts WHERE id = $1)`
-	err := r.DB.QueryRow(checkPostQuery, postID).Scan(&exists)
+	checkPostQuery := `SELECT EXISTS(SELECT 1 FROM posts WHERE id = $1 AND user_id = $2);`
+	err := r.DB.QueryRow(checkPostQuery, postID, userID).Scan(&exists)
 	if err != nil {
 		r.Logger.Error("Error checking if post exists", zap.Error(err))
 		return err
 	}
 
 	if !exists {
-		const t = "post_id does not exist in posts table"
-		r.Logger.Sugar().Errorw(t, "post_id", postID.String())
+		r.Logger.Sugar().Errorw("post_id does not exist for user_id", "post_id", postID.String(), "user_id", userID)
 		return model.ErrPostNotFound
 	}
-	r.Logger.Sugar().Infow("Existing post", "post_id", postID.String())
+	r.Logger.Sugar().Infow("Existing post", "post_id", postID.String(), "user_id", userID)
 	return nil
 }

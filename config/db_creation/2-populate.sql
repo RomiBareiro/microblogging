@@ -1,4 +1,4 @@
-INSERT INTO users (id, username, created_at, updated_at)
+INSERT INTO users (id, user_name, created_at, updated_at)
 VALUES
   ('11111111-1111-1111-1111-111111111111'::UUID, 'alice', now(), now()),
   ('22222222-2222-2222-2222-222222222222'::UUID, 'bob', now(), now()),

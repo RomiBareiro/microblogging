@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS posts (
 
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    username TEXT NOT NULL UNIQUE CHECK (char_length(username) <= 50),
+    user_name TEXT NOT NULL UNIQUE CHECK (char_length(user_name) <= 50),
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
     last_post_id UUID,
