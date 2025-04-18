@@ -189,6 +189,32 @@ func (s *server) GetFolloweesHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *server) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		RespondWithError(w, http.StatusMethodNotAllowed, m.ErrMethodNotAllowed.Error())
+		return
+	}
+
+	vars := mux.Vars(r)
+	userID := vars["id"]
+	if userID == "" {
+		RespondWithError(w, http.StatusBadRequest, m.ErrMissingUserID.Error())
+		return
+	}
+	if !IsValidUUID(userID) {
+		RespondWithError(w, http.StatusBadRequest, m.ErrInvalidUUID.Error())
+		return
+	}
+	err := s.Svc.DeleteUser(userID)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("failed to delete user: %v", err))
+		return
+	}
+	RespondWithSuccess(w, http.StatusOK, "user deleted", map[string]interface{}{
+		"user_id": userID,
+	})
+}
+
 func RespondWithError(w http.ResponseWriter, code int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)

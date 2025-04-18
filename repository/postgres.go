@@ -135,7 +135,7 @@ func (r *DBConnector) GetUser(userID string) (model.User, error) {
 	var user model.User
 	query := `SELECT * FROM users WHERE id = $1`
 	if err := r.DB.Get(&user, query, userID); err != nil {
-		r.Logger.Error("Error getting user", zap.Error(err))
+		r.Logger.Sugar().Errorw("Error getting user", "error", err, "user_id", userID)
 		return model.User{}, err
 	}
 	r.Logger.Sugar().Infow("Got user info", "user_id", userID)
@@ -143,6 +143,10 @@ func (r *DBConnector) GetUser(userID string) (model.User, error) {
 }
 
 func (r *DBConnector) DeleteUser(userID string) error {
+	if _, err := r.GetUser(userID); err != nil {
+		r.Logger.Error("User not found", zap.Error(err))
+		return err
+	}
 	query := `DELETE FROM users WHERE id = $1`
 	_, err := r.DB.Exec(query, userID)
 	if err != nil {

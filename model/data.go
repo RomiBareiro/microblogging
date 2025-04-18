@@ -3,6 +3,8 @@ package model
 import (
 	"errors"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Post struct {
@@ -66,9 +68,9 @@ type CreateUserRequest struct {
 }
 
 type User struct {
-	ID         string    `json:"id"`
-	Name       string    `json:"name"`
-	LastPostID string    `json:"last_post_id"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID         string    `json:"id" db:"id"`
+	Name       string    `json:"name" db:"user_name"`
+	LastPostID uuid.UUID `json:"last_post_id" db:"last_post_id"`
+	CreatedAt  time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at" db:"updated_at"`
 }
