@@ -232,39 +232,62 @@ func TestGetFollowees(t *testing.T) {
 }
 
 func TestCreateUser(t *testing.T) {
-	db, mock, _ := sqlmock.New()
+	// Set up the mock database
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
 	defer db.Close()
 
-	sqlxDB := sqlx.NewDb(db, "sqlmock")
-	logger := zap.NewNop()
-	repo := &DBConnector{DB: sqlxDB, Logger: logger}
+	sqlxDB := sqlx.NewDb(db, "postgres")
+	fixedTime := time.Date(2025, 4, 18, 23, 12, 40, 0, time.UTC).Format(time.RFC3339)
 
-	userData := model.CreateUserRequest{
-		Name: "alice",
+	// Create the repository with the mock database
+	r := &DBConnector{
+		DB:     sqlxDB,
+		Logger: zap.NewNop(),
 	}
 
-	userID := uuid.New()
+	// Input data for creating the user
+	userData := model.CreateUserRequest{
+		Name:     "testuser",
+		Password: "securepassword",
+		Email:    "test@example.com",
+	}
 
-	t.Run("Happy path", func(t *testing.T) {
-		mock.ExpectQuery(`INSERT INTO users \(user_name, created_at, updated_at\) VALUES \(\$1, \$2, \$3\) RETURNING id`).
-			WithArgs(userData.Name, sqlmock.AnyArg(), sqlmock.AnyArg()).
-			WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(userID))
+	// Happy Path Test (user created successfully)
+	t.Run("happy_path_-_user_created_successfully", func(t *testing.T) {
+		mock.ExpectQuery(`INSERT INTO users \(.+\)`).
+			WithArgs(userData.Name, userData.Password, userData.Email, sqlmock.AnyArg(), sqlmock.AnyArg()).
+			WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(uuid.New().String()))
 
-		returnedUserID, err := repo.CreateUser(userData)
+		userID, err := r.CreateUser(userData)
+
 		assert.NoError(t, err)
-		assert.NotEqual(t, uuid.Nil, returnedUserID)
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assert.NotEqual(t, uuid.Nil, userID)
 	})
 
-	t.Run("No happy path - error in insert", func(t *testing.T) {
-		mock.ExpectQuery(`INSERT INTO users \(user_name, created_at, updated_at\) VALUES \(\$1, \$2, \$3\) RETURNING id`).
-			WithArgs(userData.Name, sqlmock.AnyArg(), sqlmock.AnyArg()).
-			WillReturnError(fmt.Errorf("failed to insert user"))
+	// Test case for database error when inserting the user
+	t.Run("db_returns_error_on_insert", func(t *testing.T) {
+		mock.ExpectQuery(`INSERT INTO users \(.+\)`).
+			WithArgs(userData.Name, userData.Password, userData.Email, fixedTime, fixedTime).
+			WillReturnError(fmt.Errorf("db error"))
 
-		returnedUserID, err := repo.CreateUser(userData)
+		userID, err := r.CreateUser(userData)
+
+		// Verify the results
 		assert.Error(t, err)
-		assert.Equal(t, uuid.Nil, returnedUserID)
-		assert.NoError(t, mock.ExpectationsWereMet())
+		assert.Equal(t, uuid.Nil, userID)
+	})
+
+	// Test case where no ID is returned from the database
+	t.Run("no_rows_returned", func(t *testing.T) {
+		mock.ExpectQuery(`INSERT INTO users \(.+\)`).
+			WithArgs(userData.Name, userData.Password, userData.Email, fixedTime, fixedTime).
+			WillReturnRows(sqlmock.NewRows([]string{"id"})) // No ID returned
+
+		userID, err := r.CreateUser(userData)
+
+		assert.Error(t, err)
+		assert.Equal(t, uuid.Nil, userID)
 	})
 }
 

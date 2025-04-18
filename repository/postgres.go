@@ -120,14 +120,14 @@ func (r *DBConnector) GetFollowees(userID string, limit int) ([]string, error) {
 }
 
 func (r *DBConnector) CreateUser(userData model.CreateUserRequest) (uuid.UUID, error) {
-	now := time.Now().UTC()
+	now := time.Now().UTC().Format(time.RFC3339)
 	var userID uuid.UUID
 	query := `
-		INSERT INTO users (user_name, created_at, updated_at)
-		VALUES ($1, $2, $3)
-		RETURNING id
+		INSERT INTO users (user_name, password, email, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id;
 	`
-	err := r.DB.QueryRow(query, userData.Name, now, now).Scan(&userID)
+	err := r.DB.QueryRow(query, userData.Name, userData.Password, userData.Email, now, now).Scan(&userID)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to insert user: %w", err)
 	}

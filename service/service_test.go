@@ -212,7 +212,7 @@ func TestCreateUser(t *testing.T) {
 				expectedUUID := uuid.Must(uuid.Parse("66e95b4d-1f09-4cfb-b71d-bb80f92a8dbf"))
 				mockRepo.On("CreateUser", mock.Anything).Return(expectedUUID, nil)
 			},
-			input:     model.CreateUserRequest{Name: "John Doe"},
+			input:     model.CreateUserRequest{Name: "John Doe", Email: "oE5W0@example.com", Password: "password123"},
 			expected:  uuid.Must(uuid.Parse("66e95b4d-1f09-4cfb-b71d-bb80f92a8dbf")),
 			expectErr: false,
 		},
