@@ -8,11 +8,11 @@ import (
 )
 
 type Post struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id" validate:"required,uuid"`
-	Content   string    `json:"content" validate:"required,max=280"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        string    `json:"id" db:"id"`
+	UserID    string    `json:"user_id" validate:"required,uuid" db:"user_id" `
+	Content   string    `json:"content" validate:"required,max=280" db:"content"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"created_at"`
 }
 type Follow struct {
 	FollowerID string
@@ -73,4 +73,14 @@ type User struct {
 	LastPostID uuid.UUID `json:"last_post_id" db:"last_post_id"`
 	CreatedAt  time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at" db:"updated_at"`
+}
+
+type TimelineRequest struct {
+	UserID string    `json:"user_id"`
+	Limit  int       `json:"limit"`
+	Before time.Time `json:"before"`
+}
+
+type TimelineResponse struct {
+	Posts []Post `json:"posts"`
 }

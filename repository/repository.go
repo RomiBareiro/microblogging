@@ -10,7 +10,7 @@ import (
 
 type PostRepository interface {
 	Save(post *model.Post) (uuid.UUID, error)
-	GetTimeline(userID string) ([]model.Post, error)
+	GetTimeline(info model.TimelineRequest) (model.TimelineResponse, error)
 	FollowUser(followerID, followeeID string) error
 	GetFollowees(userID string, limit int) ([]string, error)
 	CreateUser(userData model.CreateUserRequest) (uuid.UUID, error)
@@ -40,7 +40,7 @@ func (p *postRepo) GetFollowees(userID string, limit int) ([]string, error) {
 }
 
 // GetTimeline implements PostRepository.
-func (p *postRepo) GetTimeline(userID string) ([]model.Post, error) {
+func (p *postRepo) GetTimeline(info model.TimelineRequest) (model.TimelineResponse, error) {
 	panic("unimplemented")
 }
 

@@ -70,19 +70,23 @@ func (r *DBConnector) UpdatePostPut(post model.CreatePostRequest) error {
 	return err
 }
 
-func (r *DBConnector) GetTimeline(userID string) ([]model.Post, error) {
-	var posts []model.Post
+func (r *DBConnector) GetTimeline(info model.TimelineRequest) (model.TimelineResponse, error) {
+	var posts model.TimelineResponse
+	// if info.Before is not set, it previously used a default value of 3 days from now
 	query := `
 		SELECT p.id, p.user_id, p.content, p.created_at
 		FROM posts p
 		JOIN follows f ON f.followee_id = p.user_id
 		WHERE f.follower_id = $1
+		AND p.created_at < $2
 		ORDER BY p.created_at DESC
+		LIMIT $3
 	`
-	err := r.DB.Select(&posts, query, userID)
+	err := r.DB.Select(&posts.Posts, query, info.UserID, info.Before, info.Limit)
+
 	if err != nil {
-		r.Logger.Error("Error getting timeline", zap.Error(err))
-		return nil, err
+		r.Logger.Sugar().Errorw("Error getting timeline", "error", err, "user_id", info.UserID, "before", info.Before, "limit", info.Limit)
+		return model.TimelineResponse{}, err
 	}
 	return posts, nil
 }

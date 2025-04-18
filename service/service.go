@@ -10,7 +10,7 @@ import (
 
 type BlogService interface {
 	CreatePost(userID, content string) (uuid.UUID, error)
-	GetTimeline(userID string) ([]m.Post, error)
+	GetTimeline(timeLine m.TimelineRequest) (m.TimelineResponse, error)
 	FollowUser(followerID, followeeID string) error
 	GetFollowees(userID string, limit int) ([]string, error)
 	CreateUser(userData m.CreateUserRequest) (uuid.UUID, error)
@@ -36,8 +36,8 @@ func (s *blogService) CreatePost(userID, content string) (uuid.UUID, error) {
 	return s.repo.Save(post)
 }
 
-func (s *blogService) GetTimeline(userID string) ([]m.Post, error) {
-	return s.repo.GetTimeline(userID)
+func (s *blogService) GetTimeline(info m.TimelineRequest) (m.TimelineResponse, error) {
+	return s.repo.GetTimeline(info)
 }
 
 func (s *blogService) FollowUser(followerID, followeeID string) error {
