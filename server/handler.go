@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"golang.org/x/sync/errgroup"
 )
@@ -40,7 +39,7 @@ func (s *server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	RespondWithSuccess(w, http.StatusCreated, "post createdd", map[string]interface{}{
+	RespondWithSuccess(w, http.StatusCreated, "post created", map[string]interface{}{
 		"user_id": req.UserID,
 		"post_id": id,
 	})
@@ -57,8 +56,7 @@ func (s *server) UpdatePostPutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := uuid.Parse(req.PostID)
-	if err != nil {
+	if !IsValidUUID(req.PostID) {
 		RespondWithError(w, http.StatusBadRequest, "invalid post_id UUID")
 		return
 	}
@@ -66,7 +64,7 @@ func (s *server) UpdatePostPutHandler(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusBadRequest, m.ErrContentTooLong.Error())
 		return
 	}
-	err = s.Svc.UpdatePostPut(req)
+	err := s.Svc.UpdatePostPut(req)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("%s: %s", m.ErrCouldNotUpdate.Error(), err.Error()))
 		return
@@ -143,7 +141,7 @@ func loadTimelineParams(userID, limitStr, beforeStr string) (m.TimelineRequest, 
 	)
 
 	errGroup.Go(func() error {
-		if _, err := uuid.Parse(userID); err != nil {
+		if !IsValidUUID(userID) {
 			return m.ErrInvalidUUID
 		}
 		mu.Lock()
