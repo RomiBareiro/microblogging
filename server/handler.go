@@ -65,7 +65,7 @@ func (s *server) UpdatePostPutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	err = s.Svc.UpdatePostPut(req)
 	if err != nil {
-		RespondWithError(w, http.StatusNotModified, err.Error())
+		RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("%s: %s", m.ErrCouldNotUpdate.Error(), err.Error()))
 		return
 	}
 
