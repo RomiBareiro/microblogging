@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -15,10 +16,18 @@ func (s *server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusMethodNotAllowed, m.ErrMethodNotAllowed.Error())
 		return
 	}
+	var req m.CreatePostRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, m.ErrInvalidRequest.Error())
+		return
+	}
 
-	req, err := ValidateCreatePostInput(r.Body)
-	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, err.Error())
+	if err := validate.Struct(req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, m.ErrInvalidJSON.Error())
+		return
+	}
+	if err := ValidateContent(req.Content); err != nil {
+		RespondWithError(w, http.StatusBadRequest, m.ErrContentTooLong.Error())
 		return
 	}
 
@@ -28,17 +37,42 @@ func (s *server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	RespondWithSuccess(w, http.StatusCreated, "post created/updated", map[string]interface{}{
+	RespondWithSuccess(w, http.StatusCreated, "post createdd", map[string]interface{}{
 		"user_id": req.UserID,
 		"post_id": id,
 	})
 }
 
-func (s *server) CreatePutHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) UpdatePostPutHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		RespondWithError(w, http.StatusMethodNotAllowed, m.ErrMethodNotAllowed.Error())
 		return
-	} //terminar
+	}
+	var req m.CreatePostRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, m.ErrInvalidJSON.Error())
+		return
+	}
+
+	_, err := uuid.Parse(req.PostID)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "invalid post_id UUID")
+		return
+	}
+	if err := ValidateContent(req.Content); err != nil {
+		RespondWithError(w, http.StatusBadRequest, m.ErrContentTooLong.Error())
+		return
+	}
+	err = s.Svc.UpdatePostPut(req)
+	if err != nil {
+		RespondWithError(w, http.StatusNotModified, err.Error())
+		return
+	}
+
+	RespondWithSuccess(w, http.StatusOK, "post updated", map[string]interface{}{
+		"user_id": req.UserID,
+		"post_id": req.PostID,
+	})
 }
 
 func (s *server) CreateUserHandler(w http.ResponseWriter, r *http.Request) {

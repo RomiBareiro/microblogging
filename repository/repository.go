@@ -14,6 +14,7 @@ type PostRepository interface {
 	FollowUser(followerID, followeeID string) error
 	GetFollowees(userID string, limit int) ([]string, error)
 	CreateUser(userData model.CreateUserRequest) (uuid.UUID, error)
+	UpdatePostPut(post model.CreatePostRequest) error
 	DeleteUser(userID string) error
 	GetUser(userID string) (model.User, error)
 }
@@ -21,6 +22,11 @@ type PostRepository interface {
 type postRepo struct {
 	db     *sqlx.DB
 	logger *zap.Logger
+}
+
+// UpdatePostPut implements PostRepository.
+func (p *postRepo) UpdatePostPut(post model.CreatePostRequest) error {
+	panic("unimplemented")
 }
 
 // FollowUser implements PostRepository.

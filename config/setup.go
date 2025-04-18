@@ -118,7 +118,7 @@ func ServerSetup(svc service.BlogService) {
 	router := mux.NewRouter()
 	api := router.PathPrefix("/V1").Subrouter()
 	api.HandleFunc("/post", s.CreatePostHandler).Methods("POST")
-	api.HandleFunc("/post", s.CreatePutHandler).Methods("PUT")
+	api.HandleFunc("/posts", s.UpdatePostPutHandler).Methods("PUT")
 	api.HandleFunc("/timeline", s.GetTimelineHandler).Methods("GET")
 	api.HandleFunc("/follow", s.FollowUserHandler).Methods("POST")
 	api.HandleFunc("/followees/{id}", s.GetFolloweesHandler).Methods("GET")

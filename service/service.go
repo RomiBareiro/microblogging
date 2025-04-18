@@ -14,6 +14,7 @@ type BlogService interface {
 	FollowUser(followerID, followeeID string) error
 	GetFollowees(userID string, limit int) ([]string, error)
 	CreateUser(userData m.CreateUserRequest) (uuid.UUID, error)
+	UpdatePostPut(post m.CreatePostRequest) error
 }
 
 type blogService struct {
@@ -47,4 +48,7 @@ func (s *blogService) GetFollowees(userID string, limit int) ([]string, error) {
 
 func (s *blogService) CreateUser(userData m.CreateUserRequest) (uuid.UUID, error) {
 	return s.repo.CreateUser(userData)
+}
+func (s *blogService) UpdatePostPut(post m.CreatePostRequest) error {
+	return s.repo.UpdatePostPut(post)
 }

@@ -29,28 +29,45 @@ func (r *DBConnector) Save(post *model.Post) (uuid.UUID, error) {
 		RETURNING id;
 	`
 
-	err := r.DB.QueryRow(insertQuery,
-		post.UserID, post.Content, now, now,
-	).Scan(&postID)
+	err := r.DB.QueryRow(insertQuery, post.UserID, post.Content, now, now).Scan(&postID)
 	if err != nil {
 		r.Logger.Error("Error inserting post", zap.Error(err))
 		return uuid.Nil, err
 	}
-
-	// Goroutine is not blocker if user update is failed
-	go func(postID uuid.UUID, userID string, updatedAt time.Time) {
-		const updateUserQuery = `
-			UPDATE users
-			SET last_post_id = $1, updated_at = $2
-			WHERE id = $3;
-		`
-		if _, err := r.DB.Exec(updateUserQuery, postID, updatedAt, userID); err != nil {
-			r.Logger.Error("Error updating user's last_post_id", zap.Error(err))
-		}
-	}(postID, post.UserID, now)
+	// Update the user's last post asynchronously
+	r.updateUserLastPostAsync(postID, post.UserID, now)
 
 	r.Logger.Sugar().Infow("Post saved", "post_id", postID.String())
 	return postID, nil
+}
+
+func (r *DBConnector) UpdatePostPut(post model.CreatePostRequest) error {
+	now := time.Now().UTC()
+	postUUID, err := uuid.Parse(post.PostID)
+	if err != nil {
+		r.Logger.Error("Invalid post_id UUID", zap.Error(err))
+		return model.ErrInvalidUUID
+	}
+
+	if err := r.existPost(postUUID); err != nil {
+		return model.ErrPostNotFound
+	}
+
+	const updateQuery = `
+		UPDATE posts
+		SET content = $1, updated_at = $2
+		WHERE id = $3 AND user_id = $4;
+	`
+	_, err = r.DB.Exec(updateQuery, post.Content, now, post.PostID, post.UserID)
+	if err != nil {
+		r.Logger.Error("Error updating post", zap.Error(err))
+		return err
+	}
+
+	// Update the user's last post asynchronously
+	r.updateUserLastPostAsync(postUUID, post.UserID, now)
+	r.Logger.Sugar().Infow("Post updated", "post_id", post.PostID)
+	return err
 }
 
 func (r *DBConnector) GetTimeline(userID string) ([]model.Post, error) {
@@ -130,7 +147,40 @@ func (r *DBConnector) DeleteUser(userID string) error {
 	_, err := r.DB.Exec(query, userID)
 	if err != nil {
 		r.Logger.Error("Error deleting user", zap.Error(err))
+		return err
 	}
 	r.Logger.Sugar().Info("User is deleted", "user_id", userID)
 	return err
+}
+
+func (r *DBConnector) updateUserLastPostAsync(postID uuid.UUID, userID string, updatedAt time.Time) {
+	go func() {
+		const updateUserQuery = `
+			UPDATE users
+			SET last_post_id = $1, updated_at = $2
+			WHERE id = $3;
+		`
+		if _, err := r.DB.Exec(updateUserQuery, postID, updatedAt, userID); err != nil {
+			r.Logger.Error("Error updating user's last_post_id", zap.Error(err))
+		}
+		r.Logger.Sugar().Infow("User's last_post_id updated", "user_id", userID, "post_id", postID.String())
+	}()
+}
+
+func (r *DBConnector) existPost(postID uuid.UUID) error {
+	var exists bool
+	checkPostQuery := `SELECT EXISTS(SELECT 1 FROM posts WHERE id = $1)`
+	err := r.DB.QueryRow(checkPostQuery, postID).Scan(&exists)
+	if err != nil {
+		r.Logger.Error("Error checking if post exists", zap.Error(err))
+		return err
+	}
+
+	if !exists {
+		const t = "post_id does not exist in posts table"
+		r.Logger.Sugar().Errorw(t, "post_id", postID.String())
+		return model.ErrPostNotFound
+	}
+	r.Logger.Sugar().Infow("Existing post", "post_id", postID.String())
+	return nil
 }

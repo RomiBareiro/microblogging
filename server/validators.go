@@ -1,25 +1,18 @@
 package server
 
 import (
-	"encoding/json"
 	"errors"
-	"io"
 	m "microblogging/model"
 	"net/http"
 
 	"github.com/google/uuid"
 )
 
-func ValidateCreatePostInput(body io.Reader) (m.CreatePostRequest, error) {
-	var req m.CreatePostRequest
-	err := json.NewDecoder(body).Decode(&req)
-	if err != nil {
-		return req, errors.New("invalid input")
+func ValidateContent(content string) error {
+	if len(content) > 280 {
+		return errors.New("content too long")
 	}
-	if len(req.Content) > 280 {
-		return req, errors.New("content too long")
-	}
-	return req, nil
+	return nil
 }
 
 func IsValidUUID(u string) bool {

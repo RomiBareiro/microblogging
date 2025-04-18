@@ -32,8 +32,9 @@ type ErrorResponse struct {
 }
 
 type CreatePostRequest struct {
-	UserID  string `json:"user_id" validate:"required"`
+	UserID  string `json:"user_id" validate:"required,uuid"`
 	Content string `json:"content"`
+	PostID  string `json:"post_id"`
 }
 
 var (
@@ -50,6 +51,9 @@ var (
 	ErrCouldNotGetTimeline = errors.New("could not get timeline")
 	ErrCouldNotCreateUser  = errors.New("could not create user")
 	ErrMissingFolloweeID   = errors.New("followee_id is required")
+	ErrInvalidInput        = errors.New("invalid input")
+	ErrCouldNotUpdate      = errors.New("could not update post")
+	ErrPostNotFound        = errors.New("post not found")
 )
 
 type FollowRequest struct {
