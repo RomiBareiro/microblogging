@@ -147,12 +147,13 @@ func (r *DBConnector) GetUser(userID string) (model.User, error) {
 }
 
 func (r *DBConnector) DeleteUser(userID string) error {
-	if _, err := r.GetUser(userID); err != nil {
+	exists, err := r.existUser(userID)
+	if err != nil || !exists {
 		r.Logger.Error("User not found", zap.Error(err))
 		return err
 	}
 	query := `DELETE FROM users WHERE id = $1`
-	_, err := r.DB.Exec(query, userID)
+	_, err = r.DB.Exec(query, userID)
 	if err != nil {
 		r.Logger.Error("Error deleting user", zap.Error(err))
 		return err
@@ -160,7 +161,22 @@ func (r *DBConnector) DeleteUser(userID string) error {
 	r.Logger.Sugar().Info("User is deleted", "user_id", userID)
 	return err
 }
+func (r *DBConnector) existUser(userID string) (bool, error) {
+	var exists bool
+	checkPostQuery := `SELECT EXISTS (SELECT 1 FROM users WHERE id = $1);`
+	err := r.DB.QueryRow(checkPostQuery, userID).Scan(&exists)
+	if err != nil {
+		r.Logger.Sugar().Errorw("Error checking if user exists", "error", err, "user_id", userID)
+		return false, err
+	}
 
+	if !exists {
+		r.Logger.Sugar().Errorw("post_id does not exist for user_id", "user_id", userID)
+		return exists, model.ErrUserNotFound
+	}
+	r.Logger.Sugar().Infow("Existing user", "user_id", userID)
+	return exists, nil
+}
 func (r *DBConnector) updateUserLastPostAsync(postID uuid.UUID, userID string, updatedAt time.Time) {
 	go func() {
 		const updateUserQuery = `

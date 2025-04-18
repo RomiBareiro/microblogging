@@ -317,12 +317,10 @@ func TestDeleteUser(t *testing.T) {
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
 	logger := zap.NewNop()
 	repo := &DBConnector{DB: sqlxDB, Logger: logger}
-	now := time.Now()
 
-	mock.ExpectQuery(`SELECT \* FROM users WHERE id = \$1`).
+	mock.ExpectQuery(`SELECT EXISTS \(SELECT 1 FROM users WHERE id = \$1\)`).
 		WithArgs("user-id-123").
-		WillReturnRows(sqlmock.NewRows([]string{"id", "user_name", "created_at", "updated_at"}).
-			AddRow("user-id-123", "bob", now, now))
+		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 
 	mock.ExpectExec(`DELETE FROM users WHERE id = \$1`).
 		WithArgs("user-id-123").
