@@ -5,6 +5,7 @@ import (
 	"fmt"
 	m "microblogging/model"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -31,6 +32,13 @@ func (s *server) CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 		"user_id": req.UserID,
 		"post_id": id,
 	})
+}
+
+func (s *server) CreatePutHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		RespondWithError(w, http.StatusMethodNotAllowed, m.ErrMethodNotAllowed.Error())
+		return
+	} //terminar
 }
 
 func (s *server) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -122,13 +130,20 @@ func (s *server) GetFolloweesHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	userID := vars["id"]
-
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "invalid limit parameter")
+		return
+	}
 	if userID == "" {
 		RespondWithError(w, http.StatusBadRequest, m.ErrMissingUserID.Error())
 		return
 	}
-
-	followees, err := s.Svc.GetFollowees(userID)
+	if limit <= 0 {
+		RespondWithError(w, http.StatusBadRequest, "limit must be greater than 0")
+		return
+	}
+	followees, err := s.Svc.GetFollowees(userID, limit)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("failed to fetch followees: %v", err))
 		return

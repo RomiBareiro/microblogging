@@ -12,7 +12,7 @@ type PostRepository interface {
 	Save(post *model.Post) (uuid.UUID, error)
 	GetTimeline(userID string) ([]model.Post, error)
 	FollowUser(followerID, followeeID string) error
-	GetFollowees(userID string) ([]string, error)
+	GetFollowees(userID string, limit int) ([]string, error)
 	CreateUser(userData model.CreateUserRequest) (uuid.UUID, error)
 	DeleteUser(userID string) error
 	GetUser(userID string) (model.User, error)
@@ -29,7 +29,7 @@ func (p *postRepo) FollowUser(followerID string, followeeID string) error {
 }
 
 // GetFollowees implements PostRepository.
-func (p *postRepo) GetFollowees(userID string) ([]string, error) {
+func (p *postRepo) GetFollowees(userID string, limit int) ([]string, error) {
 	panic("unimplemented")
 }
 
