@@ -73,6 +73,8 @@ If you would like to contribute to this project, you can do so by following thes
 
 5- Open a pull request for your changes to be reviewed and merged.
 
+Take a look to the first PR I created to merge main to add evidences and get an approval to merge new functionalities: https://github.com/RomiBareiro/microblogging/pull/1
+
 ## Feel free to contact me
 
 bareiro.romina@gmail.com
