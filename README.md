@@ -63,17 +63,26 @@ go test ./...
 ## Contributing
 If you would like to contribute to this project, you can do so by following these steps:
 
-1- Fork this repository.
+- Fork this repository.
 
-2- Create a branch for your new feature or bug fix (git checkout -b feature/new-feature).
+- Create a branch for your new feature or bug fix (git checkout -b feature/new-feature).
 
-3- Make your changes and commit them (git commit -m 'Add new feature').
+- Make your changes and commit them (git commit -m 'Add new feature').
 
-4- Push your changes to your fork (git push origin feature/new-feature).
+- Push your changes to your fork (git push origin feature/new-feature).
 
-5- Open a pull request for your changes to be reviewed and merged.
+- Open a pull request for your changes to be reviewed and merged.
+
+- Direct pushes to the `main` branch are not allowed.
+
+- All changes must go through a Pull Request (PR).
+
+- Every PR requires **at least one approval** before it can be merged.
+
+- If new commits are pushed after approval, the PR must be reviewed again.
 
 Take a look to the first PR I created to merge main to add evidences and get an approval to merge new functionalities: https://github.com/RomiBareiro/microblogging/pull/1
+
 
 ## Feel free to contact me
 
