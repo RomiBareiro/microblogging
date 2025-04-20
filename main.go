@@ -1,18 +1,17 @@
 package main
 
 import (
+	"context"
 	"microblogging/config"
-	"microblogging/repository"
-	"microblogging/server"
 	"microblogging/service"
 )
 
 func main() {
-	db := config.ConnectDB()
-	repo := repository.NewPostRepository(db)
-	svc := service.NewBlogService(repo)
-	handler := server.NewBlogHandler(svc)
-
-	r := server.SetupRouter(handler)
-	r.Run(":8080")
+	ctx := context.Background()
+	db, err := config.Setup(ctx)
+	if err != nil {
+		panic(err)
+	}
+	svc := service.NewBlogService(db)
+	config.ServerSetup(svc)
 }

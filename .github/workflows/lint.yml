@@ -22,18 +22,35 @@ jobs:
       with:
         go-version: '1.24'
 
+    - name: Install dependencies
+      run: |
+        go mod tidy
+        go mod download
+
     - name: Install golangci-lint
       run: |
         curl -sSfL https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz | tar -xz -C /tmp
         sudo mv /tmp/golangci-lint-*/golangci-lint /usr/local/bin/
 
-    - name: Run GolangCI-Lint
+    - name: Run GolangCI-Lint only on modified files
       run: |
-        golangci-lint run --fix
-
-    - name: Run GoFmt
+        modified_files=$(git diff --name-only --diff-filter=ACMRTUXB HEAD | grep '.go$' || true)
+        if [ -n "$modified_files" ]; then
+          echo "Running lint on modified Go files..."
+          golangci-lint run --fix $modified_files
+        else
+          echo "No Go files modified. Skipping linting."
+        fi
+  
+    - name: Run GoFmt only on modified files
       run: |
-        gofmt -s -w .
+        modified_files=$(git diff --name-only --diff-filter=ACMRTUXB HEAD | grep '.go$' || true)
+        if [ -n "$modified_files" ]; then
+          echo "Running gofmt on modified Go files..."
+          gofmt -s -w $modified_files
+        else
+          echo "No Go files modified. Skipping formatting."
+        fi
 
     - name: Check GoFmt
       run: |
