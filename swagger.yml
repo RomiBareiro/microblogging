@@ -231,6 +231,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /unfollow:
+    post:
+      summary: Unfollow a user
+      tags: [Follows]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FollowRequest'
+      responses:
+        '200':
+          description: User unfollowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '405':
+          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Failed to unfollow user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /followees/{id}:
     get:
@@ -282,8 +317,11 @@ components:
       properties:
         username:
           type: string
+          example: "john_doe"
         email:
           type: string
+          format: email
+          example: "r2Tb0@example.com"
     CreatePostRequest:
       type: object
       required: [user_id, content]
@@ -291,8 +329,10 @@ components:
         user_id:
           type: string
           format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
         content:
           type: string
+          example: "This is a sample post content."
     UpdatePostRequest:
       allOf:
         - $ref: '#/components/schemas/CreatePostRequest'
@@ -302,6 +342,7 @@ components:
             post_id:
               type: string
               format: uuid
+              example: "123e4567-e89b-12d3-a456-426614174000"
     FollowRequest:
       type: object
       required: [follower_id, followee_id]
@@ -309,9 +350,11 @@ components:
         follower_id:
           type: string
           format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
         followee_id:
           type: string
           format: uuid
+          example: "987e6543-e21b-32d3-b456-426655440000"
     SuccessResponse:
       type: object
       properties:

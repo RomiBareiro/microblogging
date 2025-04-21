@@ -27,6 +27,10 @@ func (m *MockPostRepository) FollowUser(followerID, followeeID string) error {
 	return args.Error(0)
 }
 
+func (m *MockPostRepository) UnfollowUser(followerID, followeeID string) error {
+	args := m.Called(followerID, followeeID)
+	return args.Error(0)
+}
 func (m *MockPostRepository) GetFollowees(userID string, limit int) ([]string, error) {
 	args := m.Called(userID, limit)
 	return args.Get(0).([]string), args.Error(1)

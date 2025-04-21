@@ -12,6 +12,7 @@ type BlogService interface {
 	CreatePost(userID, content string) (uuid.UUID, error)
 	GetTimeline(timeLine m.TimelineRequest) (m.TimelineResponse, error)
 	FollowUser(followerID, followeeID string) error
+	UnfollowUser(followerID, followeeID string) error
 	GetFollowees(userID string, limit int) ([]string, error)
 	CreateUser(userData m.CreateUserRequest) (uuid.UUID, error)
 	UpdatePostPut(post m.CreatePostRequest) error
@@ -42,6 +43,9 @@ func (s *blogService) GetTimeline(info m.TimelineRequest) (m.TimelineResponse, e
 
 func (s *blogService) FollowUser(followerID, followeeID string) error {
 	return s.repo.FollowUser(followerID, followeeID)
+}
+func (s *blogService) UnfollowUser(followerID, followeeID string) error {
+	return s.repo.UnfollowUser(followerID, followeeID)
 }
 
 func (s *blogService) GetFollowees(userID string, limit int) ([]string, error) {

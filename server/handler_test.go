@@ -45,6 +45,12 @@ func (m *MockService) FollowUser(followerID string, followeeID string) error {
 	return args.Error(0)
 }
 
+// UnfollowUser mocks FollowUser method
+func (m *MockService) UnfollowUser(followerID string, followeeID string) error {
+	args := m.Called(followeeID, followerID)
+	return args.Error(0)
+}
+
 // GetFollowees mocks GetFollowees method
 func (m *MockService) GetFollowees(userID string, limit int) ([]string, error) {
 	args := m.Called(userID, limit)
@@ -217,6 +223,189 @@ func TestUpdatePostPutHandler(t *testing.T) {
 
 			w := httptest.NewRecorder()
 			s.UpdatePostPutHandler(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			mockSvc.AssertExpectations(t)
+		})
+	}
+}
+func TestUnfollowHandler(t *testing.T) {
+	mockSvc := new(MockService)
+	s := server.NewServer(context.Background(), mockSvc)
+
+	// fixed ids
+	const validFollowerID string = "550e8400-e29b-41d4-a716-446655440000"
+	const validFolloweeID string = "550e8400-e29b-41d4-a716-446655440001"
+
+	tests := []struct {
+		name           string
+		method         string
+		body           interface{}
+		mockReturnErr  error
+		expectedStatus int
+	}{
+		{
+			name:           "Method Not Allowed",
+			method:         http.MethodGet,
+			body:           nil,
+			expectedStatus: http.StatusMethodNotAllowed,
+		},
+		{
+			name:           "Invalid JSON Body",
+			method:         http.MethodPost,
+			body:           "not-json",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "Missing Required Fields",
+			method:         http.MethodPost,
+			body:           map[string]string{"follower_id": validFollowerID},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:   "Service Error",
+			method: http.MethodPost,
+			body: map[string]string{
+				"follower_id": validFollowerID,
+				"followee_id": validFolloweeID,
+			},
+			mockReturnErr:  errors.New("mock unfollow error"),
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:   "Success",
+			method: http.MethodPost,
+			body: map[string]string{
+				"follower_id": validFollowerID,
+				"followee_id": validFolloweeID,
+			},
+			mockReturnErr:  nil,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:   "Unfollow_Self",
+			method: http.MethodPost,
+			body: map[string]string{
+				"follower_id": validFollowerID,
+				"followee_id": validFollowerID,
+			},
+			mockReturnErr:  model.ErrCanNotFollowSelf,
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSvc.ExpectedCalls = nil // reset expectations
+
+			var bodyBytes []byte
+			if tt.body != nil {
+				bodyBytes, _ = json.Marshal(tt.body)
+			}
+
+			if m, ok := tt.body.(map[string]string); ok &&
+				m["follower_id"] == validFollowerID &&
+				m["followee_id"] == validFolloweeID &&
+				tt.method == http.MethodPost {
+				mockSvc.On("UnfollowUser", validFolloweeID, validFollowerID).Return(tt.mockReturnErr)
+			}
+
+			req := httptest.NewRequest(tt.method, "/unfollow", bytes.NewBuffer(bodyBytes))
+			req.Header.Set("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			s.UnfollowUserHandler(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			mockSvc.AssertExpectations(t)
+		})
+	}
+}
+func TestFollowHandler(t *testing.T) {
+	mockSvc := new(MockService)
+	s := server.NewServer(context.Background(), mockSvc)
+
+	const validFollowerID = "550e8400-e29b-41d4-a716-446655440000"
+	const validFolloweeID = "550e8400-e29b-41d4-a716-446655440001"
+
+	tests := []struct {
+		name           string
+		method         string
+		body           interface{}
+		mockReturnErr  error
+		expectedStatus int
+	}{
+		{
+			name:           "Method Not Allowed",
+			method:         http.MethodGet,
+			body:           nil,
+			expectedStatus: http.StatusMethodNotAllowed,
+		},
+		{
+			name:           "Invalid JSON Body",
+			method:         http.MethodPost,
+			body:           "invalid-json",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "Missing Required Fields",
+			method:         http.MethodPost,
+			body:           map[string]string{"follower_id": validFollowerID},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:   "Follow Self",
+			method: http.MethodPost,
+			body: map[string]string{
+				"follower_id": validFollowerID,
+				"followee_id": validFollowerID,
+			},
+			mockReturnErr:  model.ErrCanNotFollowSelf,
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:   "Service Error",
+			method: http.MethodPost,
+			body: map[string]string{
+				"follower_id": validFollowerID,
+				"followee_id": validFolloweeID,
+			},
+			mockReturnErr:  errors.New("mock follow error"),
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:   "Success",
+			method: http.MethodPost,
+			body: map[string]string{
+				"follower_id": validFollowerID,
+				"followee_id": validFolloweeID,
+			},
+			mockReturnErr:  nil,
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSvc.ExpectedCalls = nil // reset mock
+
+			var bodyBytes []byte
+			if tt.body != nil {
+				bodyBytes, _ = json.Marshal(tt.body)
+			}
+
+			if m, ok := tt.body.(map[string]string); ok &&
+				m["follower_id"] == validFollowerID &&
+				m["followee_id"] == validFolloweeID &&
+				tt.method == http.MethodPost {
+				mockSvc.On("FollowUser", validFolloweeID, validFollowerID).Return(tt.mockReturnErr)
+			}
+
+			req := httptest.NewRequest(tt.method, "/follow", bytes.NewBuffer(bodyBytes))
+			req.Header.Set("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			s.FollowUserHandler(w, req)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			mockSvc.AssertExpectations(t)

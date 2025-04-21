@@ -129,6 +129,22 @@ func TestFollowUser(t *testing.T) {
 			input:     []string{"user-1", "user-2"},
 			expectErr: true,
 		},
+		{
+			name: "user_1_not_found",
+			setupMock: func(mockRepo *MockPostRepository) {
+				mockRepo.On("FollowUser", "user-1", "user-2").Return(errors.New("user-1 not found"))
+			},
+			input:     []string{"user-1", "user-2"},
+			expectErr: true,
+		},
+		{
+			name: "user_2_not_found",
+			setupMock: func(mockRepo *MockPostRepository) {
+				mockRepo.On("FollowUser", "user-1", "user-2").Return(errors.New("user-2 not found"))
+			},
+			input:     []string{"user-1", "user-2"},
+			expectErr: true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -148,6 +164,66 @@ func TestFollowUser(t *testing.T) {
 		})
 	}
 }
+
+func TestUnfollowUser(t *testing.T) {
+	testCases := []struct {
+		name      string
+		setupMock func(mockRepo *MockPostRepository)
+		input     []string
+		expectErr bool
+	}{
+		{
+			name: "success",
+			setupMock: func(mockRepo *MockPostRepository) {
+				mockRepo.On("UnfollowUser", "user-1", "user-2").Return(nil)
+			},
+			input:     []string{"user-1", "user-2"},
+			expectErr: false,
+		},
+		{
+			name: "db_error",
+			setupMock: func(mockRepo *MockPostRepository) {
+				mockRepo.On("UnfollowUser", "user-1", "user-2").Return(errors.New("db error"))
+			},
+			input:     []string{"user-1", "user-2"},
+			expectErr: true,
+		},
+		{
+			name: "user_1_not_found",
+			setupMock: func(mockRepo *MockPostRepository) {
+				mockRepo.On("UnfollowUser", "user-1", "user-2").Return(errors.New("user-1 not found"))
+			},
+			input:     []string{"user-1", "user-2"},
+			expectErr: true,
+		},
+		{
+			name: "user_2_not_found",
+			setupMock: func(mockRepo *MockPostRepository) {
+				mockRepo.On("UnfollowUser", "user-1", "user-2").Return(errors.New("user-2 not found"))
+			},
+			input:     []string{"user-1", "user-2"},
+			expectErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockRepo := new(MockPostRepository)
+			svc := NewBlogService(mockRepo)
+			tc.setupMock(mockRepo)
+
+			err := svc.UnfollowUser(tc.input[0], tc.input[1])
+
+			if tc.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
 func TestGetFollowees(t *testing.T) {
 	testCases := []struct {
 		name      string

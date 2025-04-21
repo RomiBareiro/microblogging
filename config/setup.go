@@ -122,6 +122,7 @@ func ServerSetup(svc service.BlogService) {
 	api.HandleFunc("/posts", s.UpdatePostPutHandler).Methods("PUT")
 	api.HandleFunc("/timeline", s.GetTimelineHandler).Methods("GET")
 	api.HandleFunc("/follow", s.FollowUserHandler).Methods("POST")
+	api.HandleFunc("/unfollow", s.UnfollowUserHandler).Methods("POST")
 	api.HandleFunc("/followees/{id}", s.GetFolloweesHandler).Methods("GET")
 	api.HandleFunc("/user/{id}", s.DeleteUserHandler).Methods("DELETE")
 	port := ":8080"

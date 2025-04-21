@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"regexp"
 	"testing"
@@ -13,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -196,21 +198,167 @@ func TestGetTimeline(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestFollowUser(t *testing.T) {
-	db, mock, _ := sqlmock.New()
-	defer db.Close()
-	sqlxDB := sqlx.NewDb(db, "sqlmock")
-	logger := zap.NewNop()
-	repo := &DBConnector{DB: sqlxDB, Logger: logger}
+func TestFollowUserCases(t *testing.T) {
+	type args struct {
+		follower string
+		followee string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		expectErr bool
+	}{
+		{
+			name:      "success",
+			args:      args{"user1", "user2"},
+			expectErr: false,
+		},
+		{
+			name:      "followee_not_found",
+			args:      args{"user1", "user2"},
+			expectErr: true,
+		},
+		{
+			name:      "follower_not_found",
+			args:      args{"user1", "user2"},
+			expectErr: true,
+		},
+		{
+			name:      "insert_error",
+			args:      args{"user1", "user2"},
+			expectErr: true,
+		},
+	}
 
-	mock.ExpectExec(`INSERT INTO follows`).
-		WithArgs("user1", "user2").
-		WillReturnResult(sqlmock.NewResult(1, 1))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+			sqlxDB := sqlx.NewDb(db, "sqlmock")
+			logger := zap.NewNop()
+			repo := &DBConnector{DB: sqlxDB, Logger: logger}
 
-	err := repo.FollowUser("user1", "user2")
+			switch tt.name {
+			case "success":
+				mock.ExpectQuery(`SELECT EXISTS\s*\(\s*SELECT 1 FROM users WHERE id = \$1\s*\)`).
+					WithArgs(tt.args.followee).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(`SELECT EXISTS\s*\(\s*SELECT 1 FROM users WHERE id = \$1\s*\)`).
+					WithArgs(tt.args.follower).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectExec(`INSERT INTO follows`).
+					WithArgs(tt.args.follower, tt.args.followee).
+					WillReturnResult(sqlmock.NewResult(1, 1))
 
-	assert.NoError(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet())
+			case "followee_not_found":
+				mock.ExpectQuery(`SELECT EXISTS\s*\(\s*SELECT 1 FROM users WHERE id = \$1\s*\)`).
+					WithArgs(tt.args.followee).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+
+			case "follower_not_found":
+				mock.ExpectQuery(`SELECT EXISTS\s*\(\s*SELECT 1 FROM users WHERE id = \$1\s*\)`).
+					WithArgs(tt.args.followee).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(`SELECT EXISTS\s*\(\s*SELECT 1 FROM users WHERE id = \$1\s*\)`).
+					WithArgs(tt.args.follower).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+
+			case "insert_error":
+				mock.ExpectQuery(`SELECT EXISTS\s*\(\s*SELECT 1 FROM users WHERE id = \$1\s*\)`).
+					WithArgs(tt.args.followee).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(`SELECT EXISTS\s*\(\s*SELECT 1 FROM users WHERE id = \$1\s*\)`).
+					WithArgs(tt.args.follower).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectExec(`INSERT INTO follows`).
+					WithArgs(tt.args.follower, tt.args.followee).
+					WillReturnError(errors.New("insert failed"))
+			}
+
+			err = repo.FollowUser(tt.args.follower, tt.args.followee)
+			if tt.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestUnfollowUserCases(t *testing.T) {
+	type args struct {
+		follower string
+		followee string
+	}
+	tests := []struct {
+		name      string
+		args      args
+		expectErr bool
+	}{
+		{name: "success", args: args{"user1", "user2"}, expectErr: false},
+		{name: "followee_not_found", args: args{"user1", "user2"}, expectErr: true},
+		{name: "follower_not_found", args: args{"user1", "user2"}, expectErr: true},
+		{name: "update_error", args: args{"user1", "user2"}, expectErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			sqlxDB := sqlx.NewDb(db, "sqlmock")
+			logger := zap.NewNop()
+			repo := &DBConnector{DB: sqlxDB, Logger: logger}
+
+			switch tt.name {
+			case "success":
+				mock.ExpectQuery(`SELECT EXISTS\s*\(\s*SELECT 1 FROM users WHERE id = \$1\s*\)`).
+					WithArgs(tt.args.followee).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(`SELECT EXISTS\s*\(\s*SELECT 1 FROM users WHERE id = \$1\s*\)`).
+					WithArgs(tt.args.follower).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectExec(`UPDATE follows\s+SET is_active = FALSE\s+WHERE follower_id = \$1 AND followee_id = \$2;?`).
+					WithArgs(tt.args.follower, tt.args.followee).
+					WillReturnResult(sqlmock.NewResult(0, 1))
+
+			case "followee_not_found":
+				mock.ExpectQuery(`SELECT EXISTS\s*\(\s*SELECT 1 FROM users WHERE id = \$1\s*\)`).
+					WithArgs(tt.args.followee).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+
+			case "follower_not_found":
+				mock.ExpectQuery(`SELECT EXISTS\s*\(\s*SELECT 1 FROM users WHERE id = \$1\s*\)`).
+					WithArgs(tt.args.followee).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(`SELECT EXISTS\s*\(\s*SELECT 1 FROM users WHERE id = \$1\s*\)`).
+					WithArgs(tt.args.follower).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+
+			case "update_error":
+				mock.ExpectQuery(`SELECT EXISTS\s*\(\s*SELECT 1 FROM users WHERE id = \$1\s*\)`).
+					WithArgs(tt.args.followee).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectQuery(`SELECT EXISTS\s*\(\s*SELECT 1 FROM users WHERE id = \$1\s*\)`).
+					WithArgs(tt.args.follower).
+					WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+				mock.ExpectExec(`UPDATE follows\s+SET is_active = FALSE\s+WHERE follower_id = \$1 AND followee_id = \$2;?`).
+					WithArgs(tt.args.follower, tt.args.followee).
+					WillReturnError(fmt.Errorf("update failed"))
+			}
+
+			err = repo.UnfollowUser(tt.args.follower, tt.args.followee)
+			if tt.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
 }
 
 func TestGetFollowees(t *testing.T) {

@@ -203,6 +203,10 @@ func (s *server) FollowUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.FollowerID == req.FolloweeID {
+		RespondWithError(w, http.StatusBadRequest, m.ErrCanNotFollowSelf.Error())
+		return
+	}
 	err := s.Svc.FollowUser(req.FollowerID, req.FolloweeID)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("failed to follow user %v: %v", req.FolloweeID, err))
@@ -210,6 +214,40 @@ func (s *server) FollowUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RespondWithSuccess(w, http.StatusOK, "user followed", map[string]interface{}{
+		"user_id":  req.FollowerID,
+		"followee": req.FolloweeID,
+	})
+}
+
+func (s *server) UnfollowUserHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		RespondWithError(w, http.StatusMethodNotAllowed, m.ErrMethodNotAllowed.Error())
+		return
+	}
+
+	var req m.FollowRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, m.ErrInvalidRequest.Error())
+		return
+	}
+
+	if err := validate.Struct(req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if req.FollowerID == req.FolloweeID {
+		RespondWithError(w, http.StatusBadRequest, m.ErrCanNotUnfollowSelf.Error())
+		return
+	}
+
+	err := s.Svc.UnfollowUser(req.FollowerID, req.FolloweeID)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("failed to unfollow user %v: %v", req.FolloweeID, err))
+		return
+	}
+
+	RespondWithSuccess(w, http.StatusOK, "user unfollowed", map[string]interface{}{
 		"user_id":  req.FollowerID,
 		"followee": req.FolloweeID,
 	})
