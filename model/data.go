@@ -43,6 +43,8 @@ var (
 	ErrInvalidUUID         = errors.New("invalid input syntax for type uuid")
 	ErrUserNotFound        = errors.New("user not found")
 	ErrFolloweeNotFound    = errors.New("followee not found")
+	ErrCanNotFollowSelf    = errors.New("can not follow yourself")
+	ErrCanNotUnfollowSelf  = errors.New("can not unfollow yourself")
 	ErrContentTooLong      = errors.New("post content exceeds character limit")
 	ErrMissingUserID       = errors.New("user_id is required")
 	ErrInvalidJSON         = errors.New("invalid JSON format")
@@ -58,8 +60,8 @@ var (
 )
 
 type FollowRequest struct {
-	FollowerID string `json:"follower_id" validate:"required,uuid"`
-	FolloweeID string `json:"followee_id" validate:"required,uuid"`
+	FollowerID string `json:"follower_id" validate:"required,uuid" db:"follower_id"`
+	FolloweeID string `json:"followee_id" validate:"required,uuid" db:"followee_id"`
 }
 
 type CreateUserRequest struct {
