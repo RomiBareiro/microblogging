@@ -74,14 +74,12 @@ func (r *DBConnector) UpdatePostPut(post model.CreatePostRequest) error {
 
 func (r *DBConnector) GetTimeline(info model.TimelineRequest) (model.TimelineResponse, error) {
 	var posts model.TimelineResponse
-	// if info.Before is not set, it previously used a default value of 3 days from now
+	// Return posts created after the 'before' timestamp (which defaults to 3 days ago)
 	query := `
 		SELECT p.id, p.user_id, p.content, p.created_at
 		FROM posts p
-		JOIN follows f ON f.followee_id = p.user_id
-		WHERE f.follower_id = $1
-	    AND f.is_active = TRUE
-		AND p.created_at < $2
+		WHERE p.user_id = $1
+		AND p.created_at > $2
 		ORDER BY p.created_at DESC
 		LIMIT $3
 	`
