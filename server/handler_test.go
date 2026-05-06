@@ -7,76 +7,17 @@ import (
 	"errors"
 	"microblogging/model"
 	"microblogging/server"
+	"microblogging/service"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
-// MockService implements BlogService using testify/mock
-type MockService struct {
-	mock.Mock
-}
-
-// CreatePost mocks CreatePost method
-func (m *MockService) CreatePost(userID string, content string) (uuid.UUID, error) {
-	args := m.Called(userID, content)
-	return args.Get(0).(uuid.UUID), args.Error(1)
-}
-
-// CreateUser mocks CreateUser method
-func (m *MockService) CreateUser(userData model.CreateUserRequest) (uuid.UUID, error) {
-	args := m.Called(userData)
-	return args.Get(0).(uuid.UUID), args.Error(1)
-}
-
-// DeleteUser mocks DeleteUser method
-func (m *MockService) DeleteUser(userID string) error {
-	args := m.Called(userID)
-	return args.Error(0)
-}
-
-// FollowUser mocks FollowUser method
-func (m *MockService) FollowUser(followerID string, followeeID string) error {
-	args := m.Called(followeeID, followerID)
-	return args.Error(0)
-}
-
-// UnfollowUser mocks FollowUser method
-func (m *MockService) UnfollowUser(followerID string, followeeID string) error {
-	args := m.Called(followeeID, followerID)
-	return args.Error(0)
-}
-
-// GetFollowees mocks GetFollowees method
-func (m *MockService) GetFollowees(userID string, limit int) ([]string, error) {
-	args := m.Called(userID, limit)
-	return args.Get(0).([]string), args.Error(1)
-}
-
-// GetTimeline mocks GetTimeline method
-func (m *MockService) GetTimeline(req model.TimelineRequest) (model.TimelineResponse, error) {
-	args := m.Called(req)
-	return args.Get(0).(model.TimelineResponse), args.Error(1)
-}
-
-// GetUser mocks GetUser method
-func (m *MockService) GetUser(userID string) (model.User, error) {
-	args := m.Called(userID)
-	return args.Get(0).(model.User), args.Error(1)
-}
-
-// UpdatePostPut mocks UpdatePostPut method
-func (m *MockService) UpdatePostPut(post model.CreatePostRequest) error {
-	args := m.Called(post)
-	return args.Error(0)
-}
-
 func TestCreatePostHandler(t *testing.T) {
-	mockSvc := new(MockService)
+	mockSvc := &service.MockBlogService{}
 	s := server.NewServer(context.Background(), mockSvc)
 	validUserID := uuid.New().String()
 	validContent := "Hello world"
@@ -159,7 +100,7 @@ func TestCreatePostHandler(t *testing.T) {
 }
 
 func TestUpdatePostPutHandler(t *testing.T) {
-	mockSvc := new(MockService)
+	mockSvc := &service.MockBlogService{}
 	s := server.NewServer(context.Background(), mockSvc)
 
 	validUserID := uuid.New().String()
@@ -230,7 +171,7 @@ func TestUpdatePostPutHandler(t *testing.T) {
 	}
 }
 func TestUnfollowHandler(t *testing.T) {
-	mockSvc := new(MockService)
+	mockSvc := &service.MockBlogService{}
 	s := server.NewServer(context.Background(), mockSvc)
 
 	// fixed ids
@@ -307,7 +248,7 @@ func TestUnfollowHandler(t *testing.T) {
 				m["follower_id"] == validFollowerID &&
 				m["followee_id"] == validFolloweeID &&
 				tt.method == http.MethodPost {
-				mockSvc.On("UnfollowUser", validFolloweeID, validFollowerID).Return(tt.mockReturnErr)
+				mockSvc.On("UnfollowUser", validFollowerID, validFolloweeID).Return(tt.mockReturnErr)
 			}
 
 			req := httptest.NewRequest(tt.method, "/unfollow", bytes.NewBuffer(bodyBytes))
@@ -322,7 +263,7 @@ func TestUnfollowHandler(t *testing.T) {
 	}
 }
 func TestFollowHandler(t *testing.T) {
-	mockSvc := new(MockService)
+	mockSvc := &service.MockBlogService{}
 	s := server.NewServer(context.Background(), mockSvc)
 
 	const validFollowerID = "550e8400-e29b-41d4-a716-446655440000"
@@ -398,7 +339,7 @@ func TestFollowHandler(t *testing.T) {
 				m["follower_id"] == validFollowerID &&
 				m["followee_id"] == validFolloweeID &&
 				tt.method == http.MethodPost {
-				mockSvc.On("FollowUser", validFolloweeID, validFollowerID).Return(tt.mockReturnErr)
+				mockSvc.On("FollowUser", validFollowerID, validFolloweeID).Return(tt.mockReturnErr)
 			}
 
 			req := httptest.NewRequest(tt.method, "/follow", bytes.NewBuffer(bodyBytes))
