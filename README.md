@@ -54,10 +54,20 @@ The application exposes several endpoints that allow users to interact with the 
 
 ## Tests
 
-To run the tests, use the following command:
+To run the unit tests, use the following command:
 
 ```bash
 go test ./...
+```
+
+### Integration tests with Testcontainers
+
+Integration tests use Docker to start a PostgreSQL container and run the application against a real database. These tests are tagged with `integration` and are not executed by default.
+
+Run them with:
+
+```bash
+go test -tags=integration ./server
 ```
 
 ## Contributing
